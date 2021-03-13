@@ -1,29 +1,19 @@
-const Twit = require("twit");
-const { getSongById } = require("genius-lyrics-api");
+// const Twit = require("twit");
+// const { getSongById } = require("genius-lyrics-api");
 require("dotenv").config();
-const CronJob = require("cron").CronJob;
-const https = require('https')
+// const CronJob = require("cron").CronJob;
+const fetch = require("node-fetch");
 
 /*
 NOTES:
+    Verify the "response": { "songs": [ x{ "primary_artist": { "id" } } } is the same as the artist's Genius code.
+    This filters most features - desired features may be hardcoded?
 
-    GENIUS ARTIST IDS:
-        Milo: 3158
-        R.A.P. Ferreira: 1840820
+    In const options, path must be specified as a Genius endpoint.
+    Do this programatically, please!
 
-    TOTAL SEARCH PAGES (GET /artists/:id/songs):
-        Milo: 12
-        R.A.P. Ferreira: 4
-
-    IMPORTANT:
-        Verify the "response": { "songs": [ x{ "primary_artist": { "id" } } } is the same as the artist's Genius code.
-        This filters most features - desired features may be hardcoded
-
-        In const options, path must be specified as a Genius endpoint.
-        Do this programatically, please!
-
-        The list of song IDs should wipe and re-generate weekly, so as to avoid
-        missing any releases.
+    The list of song IDs should wipe and re-generate weekly, so as to avoid
+    missing any releases.
  */
 
 /*
@@ -42,36 +32,43 @@ class Artist {
         // The condition of the while loop must be dependent on the value of a variable that
         // is instantiated as something truthy, but is then
         // updated by the result of a GET to /artists/:id/songs, where
-        // the loop is ended when { "response": { "next_page" } } is NULL
+        // the loop is ended when { "response": { "next_page" } } is null
+
+        // Instantiate variable for list of IDs
+        let song_list = [];
+
+        // Instantiate condition of while loop with truthy value
+        let search = true;
+        let pagination = 1;
+
+        while (search) {
+            fetch(`https://api.genius.com/artists/${this.id}/songs?per_page=50&page=${pagination}`, {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${process.env.GENIUS_ACCESS_TOKEN}`,
+                    },
+                }
+            )
+                .then((res) => res.json())
+                .then((json) => {
+                    // Update search and next_page, first
+                    if (!json["response"]["next_page"]) {
+                        search = false;
+                    } else {
+                        pagination = json["response"]["next_page"];
+                        // Loop through songs and add their IDs to the list
+                        for (const song in json["response"]["songs"]) {
+                            song_list.push(json["response"]["songs"][song].id);
+                        }
+                    }
+                });
+        }
+        return song_list;
     }
 }
 
 // Define all of the artists the bot will randomly pick
-const Milo = new Artist(3158)
-const RAPFerreira = new Artist(1840820)
+const Milo = new Artist(3158);
+// const RAPFerreira = new Artist(1840820)
 
-// Function that generates an https request with options, where the argument is the endpoint or path.
-function genOptions(endpoint) {
-    return {
-        hostname: 'api.genius.com',
-        port: 443,
-        path: endpoint,
-        method: 'GET',
-        headers: {
-            "Authorization": `Bearer ${process.env.GENIUS_ACCESS_TOKEN}`
-        }
-    }
-}
-
-// Example function for getting song lyrics by song ID.
-getSongById(85227, process.env.GENIUS_ACCESS_TOKEN)
-    .then((song) => console.log(song.lyrics))
-
-// const twitterBot = new Twit({
-//     consumer_key: process.env.TWITTER_API_KEY,
-//     consumer_secret: process.env.TWITTER_API_KEY_SECRET,
-//     access_token: process.env.TWITTER_ACCESS_TOKEN,
-//     access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
-// });
-
-
+console.log(Milo.getAllSongs());
