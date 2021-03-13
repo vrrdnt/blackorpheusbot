@@ -14,7 +14,7 @@
     "dotenv": "^8.2.0",
     "genius-lyrics": "^4.2.5",
     "genius-lyrics-api": "^3.0.6",
-    "node-fetch": "^2.6.1",
+    "node-fetch": "^3.0.0-beta.9",
     "simple-oauth2": "^4.2.0",
     "twit": "^2.2.11"
   }
