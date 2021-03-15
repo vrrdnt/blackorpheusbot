@@ -1,4 +1,4 @@
-// const Twit = require("twit");
+const Twit = require("twit");
 const { getSongById } = require("genius-lyrics-api");
 require("dotenv").config();
 // const CronJob = require("cron").CronJob;
@@ -61,9 +61,15 @@ class Artist {
         return song_list;
     }
 
-    async getRandomLyrics() { // Broken?
-        return getSongById(getRandomSongID(this.id), process.env.GENIUS_ACCESS_TOKEN)
-            .then((song) => console.log(song.lyrics))
+    async getRandomLyrics() {
+        await this.getAllSongs()
+            .then(list => {
+                const random = Math.floor(Math.random() * list.length)
+                getSongById(list[random], process.env.GENIUS_ACCESS_TOKEN)
+                    .then(song => {
+                        return song.lyrics
+                    })
+            })
     }
 }
 
@@ -71,11 +77,19 @@ class Artist {
 const Milo = new Artist(3158);
 const RAPFerreira = new Artist(1840820)
 
-// Function for selecting a random song ID from an artist
-function getRandomSongID(artist) {
-    artist.getAllSongs() // Broken?
-        .then(list => {
-            const random = Math.floor(Math.random() * list.length)
-            return list[random]
-        })
+// Build Twitter API client
+const twitterBot = new Twit({
+    consumer_key: process.env.TWITTER_API_KEY,
+    consumer_secret: process.env.TWITTER_API_KEY_SECRET,
+    access_token: process.env.TWITTER_ACCESS_TOKEN,
+    access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
+});
+
+// Set up randomizer
+const random = Math.round(Math.random())
+let lyrics = "";
+if (random) {
+    lyrics = Milo.getRandomLyrics().toString()
+} else {
+    lyrics = RAPFerreira.getRandomLyrics().toString()
 }
