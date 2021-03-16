@@ -89,7 +89,7 @@ const twitterBot = new Twit({
 const random = Math.round(Math.random())
 let lyrics = "";
 if (random) {
-    lyrics = Milo.getRandomLyrics().toString()
+    lyrics = Milo.getRandomLyrics()
 } else {
-    lyrics = RAPFerreira.getRandomLyrics().toString()
+    lyrics = RAPFerreira.getRandomLyrics()
 }
