@@ -6,15 +6,15 @@ const fetch = require("node-fetch");
 
 /*
 NOTES:
+
+    For anyone viewing on GitHub, I know how bad this code is.
+    I wanted it to be clean at first, but now I just want it to work.
+    I work 50 some hours a week and just want this bot done bro
+
     The list of song IDs should wipe and re-generate weekly, so as to avoid
     missing any releases.
 
     getAllSongs returns a promise - PLEASE remember to .then() the result.
- */
-
-/*
-TODO: Get a list of song IDS for every artist, and save them somewhere.
-TODO: use genius-lyrics-api on a random song ID to grab all lyrics for that song.
  */
 
 // A class for Artists containing an ID
@@ -71,6 +71,49 @@ class Artist {
                     })
             })
     }
+
+    async genRandomTweet() {
+       await this.getRandomLyrics()
+            .then(lyrics => {
+                // Split lyrics into an array by line
+                const lyrics_array = lyrics.toString().split("\n")
+
+                // Generate array without lines like [Chorus]
+                const line_set = lyrics_array.filter(item => !item.includes("[") && !item.includes("\n"))
+
+                // Generate a random number between 1 and 3 to determine how far up/down the bot will crawl
+                const random = Math.floor(Math.random() * 3) + 1
+
+                // Generate a new random to decide whether the bot will crawl backwards or forwards
+                // 0 is forwards (down the song), 1 is backwards (up the song)
+                const random_direction = Math.round(Math.random())
+
+                // Generate a new random to determine a random starting position
+                const random_start = Math.floor(Math.random() * line_set.length)
+
+                // Return the string that will get Tweeted
+                let base_array = []
+
+
+                // Add lines to array depending on direction and number of lines
+                switch (random_direction) {
+                    case 0:
+                        for (let i = 0; i < random; i++) {
+                            base_array.push(line_set[random_start+i])
+                        }
+                        break;
+                    case 1:
+                        for (let i = 0; i < random; i++) {
+                            base_array.unshift(line_set[random_start-i])
+                        }
+                }
+
+                // Return the finished array as a multi-line string
+                return base_array.join("\n").toString()
+            })
+    }
+
+
 }
 
 // Define all of the artists the bot will randomly pick
@@ -85,11 +128,5 @@ const twitterBot = new Twit({
     access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
 });
 
-// Set up randomizer
-const random = Math.round(Math.random())
-let lyrics = "";
-if (random) {
-    lyrics = Milo.getRandomLyrics()
-} else {
-    lyrics = RAPFerreira.getRandomLyrics()
-}
+Milo.genRandomTweet()
+    .then(s => console.log(s))
