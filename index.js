@@ -1,53 +1,23 @@
 const Twit = require("twit");
-const { getSongById } = require("genius-lyrics-api");
 require("dotenv").config();
-// const CronJob = require("cron").CronJob;
-const fetch = require("node-fetch")
+const fetch = require("node-fetch");
+const fs = require("fs");
+const { getSongById } = require("genius-lyrics-api");
 
 
-const artist_ids = [3158, 96862, 1840820] // Milo, Scallops Hotel, R.A.P. Ferreira
+// Create a list of Genius Artist IDs to pick from
+    const artist_ids = [3158, 96862, 1840820]; // Milo, Scallops Hotel, R.A.P. Ferreira
 
-async function storeAllSongs(id) {
-    // Use a while loop to add song IDs to an array.
-    // The condition of the while loop must be dependent on the value of a variable that
-    // is instantiated as something truthy, but is then
-    // updated by the result of a GET to /artists/:id/songs, where
-    // the loop is ended when { "response": { "next_page" } } is null
+// Load the JSON file artist_song_ids.json
+    let song_ids = require("./artist_song_ids.json");
 
-    // Instantiate variable for list of IDs
-    let song_list = [];
+// Select a random Artist ID from the list artist_ids
+    let random_artist = artist_ids[Math.floor(Math.random() * artist_ids.length)];
 
-    // Instantiate condition of while loop with truthy value
-    let search = true;
-    let pagination = 1;
+// Get a random song ID from the list of song IDs for the randomly-picked artist
+    let random_song = song_ids[random_artist][Math.floor(Math.random() * song_ids[random_artist].length)]
 
-    while (search) {
-        const response = await fetch(`https://api.genius.com/artists/${id}/songs?per_page=50&page=${pagination}`, {
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${process.env.GENIUS_ACCESS_TOKEN}`,
-            },
-        })
-        const data = await response.json()
-
-        const next_page = data["response"]["next_page"]
-
-        if (!next_page) {
-            search = false
-        } else {
-            pagination = next_page
-        }
-
-        const songs = data["response"]["songs"]
-
-        for (const song in songs) {
-            if (songs[song]["primary_artist"]["id"] === id) {
-                song_list.push(songs[song]["id"])
-            }
-        }
-    }
-    return song_list
-}
-
-storeAllSongs(96862)
-    .then(result => console.log(result))
+// Grab the lyrics
+let song_lyrics;
+getSongById(random_song, process.env.GENIUS_ACCESS_TOKEN)
+    .then((song) => song_lyrics = song.lyrics)
