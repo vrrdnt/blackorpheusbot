@@ -29,17 +29,20 @@ getSongById(random_song, process.env.GENIUS_ACCESS_TOKEN).then((song) => {
             }
         }
         let pos = Math.floor(Math.random() * arr.length-2)
-        if (Math.random() < 0.5) {
+        let bar_rand = Math.random()
+        if (bar_rand < 0.33) {
             bars = [
                 arr[pos],
                 arr[pos+1],
                 arr[pos+2]
             ]
-        } else {
+        } else if (bar_rand < 0.66 && bar_rand > 0.33) {
             bars = [
                 arr[pos],
                 arr[pos+1]
             ]
+        } else {
+            bars = [ arr[pos] ]
         }
         bars = bars.map(line => line.toLowerCase())
         console.log(bars)
