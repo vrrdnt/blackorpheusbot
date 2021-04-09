@@ -1,7 +1,5 @@
 const Twit = require("twit");
 require("dotenv").config();
-const fetch = require("node-fetch");
-const fs = require("fs");
 const { getSongById } = require("genius-lyrics-api");
 
 
@@ -17,51 +15,63 @@ let random_artist = artist_ids[Math.floor(Math.random() * artist_ids.length)];
 // Get a random song ID from the list of song IDs for the randomly-picked artist
 let random_song = song_ids[random_artist][Math.floor(Math.random() * song_ids[random_artist].length)]
 
+// Initialize the twitter bot
+const twitterBot = new Twit({
+    consumer_key: process.env.TWITTER_API_KEY,
+    consumer_secret: process.env.TWITTER_API_KEY_SECRET,
+    access_token: process.env.TWITTER_ACCESS_TOKEN,
+    access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
+});
+
 // Get random lyrics and tweet them
-getSongById(random_song, process.env.GENIUS_ACCESS_TOKEN).then((song) => {
-    let bars;
-    console.log(song)
-    if (song.lyrics != null) {
-        let arr = song.lyrics.split("\n");
-        for (let i = arr.length - 1; i >= 0; i--) {
-            if (arr[i].charAt(0) === "[" || arr[i].charAt(0) === "") {
-                arr.splice(i, 1);
-            }
-        }
-        let pos = Math.floor(Math.random() * arr.length-2)
-        let bar_rand = Math.random()
-        if (bar_rand < 0.5) {
-            bars = [
-                arr[pos],
-                arr[pos+1]
-            ]
-        } else if (bar_rand >= 0.5 && bar_rand < 0.75) {
-            bars = [ arr[pos] ]
-        } else {
-            bars = [
-                arr[pos],
-                arr[pos+1],
-                arr[pos+2]
-            ]
-        }
-        bars = bars.map(line => line.toLowerCase())
-        console.log(bars)
-
-        const twitterBot = new Twit({
-            consumer_key: process.env.TWITTER_API_KEY,
-            consumer_secret: process.env.TWITTER_API_KEY_SECRET,
-            access_token: process.env.TWITTER_ACCESS_TOKEN,
-            access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
-        });
-
-        twitterBot.post(
-            "statuses/update",
-            { status: bars.join('\n') },
-            function (error, data, response) {
-                if (error) {
-                    console.log(error);
+function postRandomLyrics() {
+    try {
+        getSongById(random_song, process.env.GENIUS_ACCESS_TOKEN).then((song) => {
+            let bars;
+            console.log(song)
+            if (song.lyrics != null && song.lyrics.toLowerCase() !== '[instrumental]') {
+                let arr = song.lyrics.split("\n");
+                for (let i = arr.length - 1; i >= 0; i--) {
+                    if (arr[i].charAt(0) === "[" || arr[i].charAt(0) === "") {
+                        arr.splice(i, 1);
+                    }
                 }
+                let pos = Math.floor(Math.random() * arr.length - 2)
+                let bar_rand = Math.random()
+                if (bar_rand < 0.65) {
+                    bars = [
+                        arr[pos],
+                        arr[pos + 1]
+                    ]
+                } else if (bar_rand >= 0.65 && bar_rand < 0.9) {
+                    bars = [arr[pos]]
+                } else {
+                    bars = [
+                        arr[pos],
+                        arr[pos + 1],
+                        arr[pos + 2]
+                    ]
+                }
+                bars = bars.map(line => line.toLowerCase())
+                console.log(bars)
+
+                twitterBot.post(
+                    "statuses/update", {
+                        status: bars.join('\n')
+                    },
+                    function(error, data, response) {
+                        if (error) {
+                            console.log(error);
+                        }
+                    }
+                );
+            } else {
+                postRandomLyrics()
             }
-        );
+        })
+    } catch {
+        postRandomLyrics()
     }
-})
+}
+
+postRandomLyrics()
