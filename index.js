@@ -28,7 +28,6 @@ function postRandomLyrics() {
     try {
         getSongById(random_song, process.env.GENIUS_ACCESS_TOKEN).then((song) => {
             let bars;
-            console.log(song)
             if (song.lyrics != null && song.lyrics.toLowerCase() !== '[instrumental]') {
                 let arr = song.lyrics.split("\n");
                 for (let i = arr.length - 1; i >= 0; i--) {
@@ -53,7 +52,6 @@ function postRandomLyrics() {
                     ]
                 }
                 bars = bars.map(line => line.toLowerCase())
-                console.log(bars)
 
                 twitterBot.post(
                     "statuses/update", {
@@ -62,6 +60,10 @@ function postRandomLyrics() {
                     function(error, data, response) {
                         if (error) {
                             console.log(error);
+                        }
+                        if (response.statusCode === 200) {
+                            console.log(`Tweet posted at ${response.headers.date.toLocaleString()}.
+                            Content: \n${bars.join('\n')}`)
                         }
                     }
                 );
