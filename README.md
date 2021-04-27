@@ -23,4 +23,11 @@ Create a `.env` file containing these keys, with your own values:
 2. Fork the project, so you can modify `config.js`, if necessary.
 3. Click the **Deploy** button below on your repository.  
   
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)  
+  
+### TODO
+|Status|Implementation|
+|:---:|---|
+|❌|Cache songs as they're downloaded to reduce Genius API calls|
+|❌|Download a fresh list of song IDs for every specified artist on a regular basis|
+|❌|Cache generated tweets, prevent posting identical tweets until a certain amount of time has passed|
