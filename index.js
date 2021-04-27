@@ -1,79 +1,79 @@
-const Twit = require("twit");
 require("dotenv").config();
+const config = require("./config.js")
 const { getSongById } = require("genius-lyrics-api");
+const twitterBot = require("./src/twitter.js")
 
-
-// Create a list of unique Genius Artist IDs to pick from
-const artist_ids = [3158, 96862, 1840820]; // Milo, Scallops Hotel, R.A.P. Ferreira
 
 // Load the JSON file artist_song_ids.json
-let song_ids = require("./artist_song_ids.json");
+let song_ids = require("./src/artist_song_ids.json");
 
 // Select a random Artist ID from the list artist_ids
-let random_artist = artist_ids[Math.floor(Math.random() * artist_ids.length)];
+let random_artist = config.artists[Math.floor(Math.random() * config.artists.length)];
 
 // Get a random song ID from the list of song IDs for the randomly-picked artist
 let random_song = song_ids[random_artist][Math.floor(Math.random() * song_ids[random_artist].length)]
+ 
+function cleanLyrics(song) {
 
-// Initialize the twitter bot
-const twitterBot = new Twit({
-    consumer_key: process.env.TWITTER_API_KEY,
-    consumer_secret: process.env.TWITTER_API_KEY_SECRET,
-    access_token: process.env.TWITTER_ACCESS_TOKEN,
-    access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
-});
+    // If the song is empty or invalid, throw an exception.
+    if (!song.lyrics) throw "The song is either empty or invalid."
 
-// Get random lyrics and tweet them
-function postRandomLyrics() {
-    try {
-        getSongById(random_song, process.env.GENIUS_ACCESS_TOKEN).then((song) => {
-            let bars;
-            if (song.lyrics != null && song.lyrics.toLowerCase() !== '[instrumental]') {
-                let arr = song.lyrics.split("\n");
-                for (let i = arr.length - 1; i >= 0; i--) {
-                    if (arr[i].charAt(0) === "[" || arr[i].charAt(0) === "") {
-                        arr.splice(i, 1);
-                    }
-                }
-                let pos = Math.floor(Math.random() * arr.length - 2)
-                let bar_rand = Math.random()
-                if (bar_rand < 0.65) {
-                    bars = [
-                        arr[pos],
-                        arr[pos + 1]
-                    ]
-                } else if (bar_rand >= 0.65 && bar_rand < 0.9) {
-                    bars = [arr[pos]]
-                } else {
-                    bars = [
-                        arr[pos],
-                        arr[pos + 1],
-                        arr[pos + 2]
-                    ]
-                }
-                bars = bars.map(line => line.toLowerCase())
+    // If the song is an instrumental, throw an exception.
+    if (song.lyrics.toLowerCase() === '[instrumental]') throw "Selected song is an instrumental."
 
-                twitterBot.post(
-                    "statuses/update", {
-                        status: bars.join('\n')
-                    },
-                    function(error, data, response) {
-                        if (error) {
-                            console.log(error);
-                        }
-                        if (response.statusCode === 200) {
-                            console.log(`Tweet posted at ${response.headers.date.toLocaleString()}.
-                            Content: \n${bars.join('\n')}`)
-                        }
-                    }
-                );
-            } else {
-                postRandomLyrics()
-            }
-        })
-    } catch {
-        postRandomLyrics()
+    // Split the lyrics string into an array of strings, split by newline characters
+    let lyrics_array = song.lyrics.split('\n');
+
+    // Clean the lyrics, removing any lines starting with a left bracket and empty lines
+    for (let i = lyrics_array.length - 1; i >= 0; i--) {
+        if (lyrics_array[i].charAt(0) === '[' || lyrics_array[i].charAt(0) === '') {
+            lyrics_array.splice(i, 1)
+        }
     }
+
+    return lyrics_array
 }
 
-postRandomLyrics()
+function selectRandomBars(lyrics) {
+
+    // Select a random bar from the lyrics array
+    let position = Math.floor(Math.random() * lyrics.length - 2)
+
+    // Construct the base string
+    let bars = [lyrics[position]]
+
+    // Select a random number of bars to crawl up through, min 0/max 3
+    let crawl_amount = Math.floor(Math.random() * 4)
+
+    // Construct a set of bars using a random start position and random crawl amount
+    for (let i = 1; i <= crawl_amount; i++) {
+        bars.push(lyrics[position + i])
+    }
+
+    // Convert the constructed bars to an all-lowercase string
+    bars = bars.map(bar => bar.toLowerCase()).join('\n')
+
+    return bars
+}
+
+function sendTweet(bars) {
+
+    // Post a tweet containing the bars passed as an argument
+    twitterBot.post('statuses/update', { status: bars },
+        function(error) {
+            if (error) {
+                throw `There was an error: \n${error}`
+            }
+        })
+}
+
+try {
+    getSongById(random_song, process.env.GENIUS_ACCESS_TOKEN)
+        .then((song) => {
+            const lyrics = cleanLyrics(song)
+            const random_bars = selectRandomBars(lyrics)
+            sendTweet(random_bars)
+        })
+} catch {
+    console.log(`There was an error finding the specified song: ${random_song}`)
+}
