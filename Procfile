@@ -1,1 +1,0 @@
-service: node index.js
