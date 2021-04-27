@@ -18,8 +18,9 @@ Create a `.env` file containing these keys, with your own values:
 
 **NOTE**: Make sure the Twitter App has **Read** + **Write** permissions.
 
-### Deploying blackorpheusbot on Heroku
-1. Fork the project, so you can modify `config.js`, if necessary.
-2. Click the **Deploy** button below on your repository.  
+### If deploying blackorpheusbot on Heroku
+1. Ignore the `.env` file step mentioned above - you'll need to create those environment variables on the Heroku platform.
+2. Fork the project, so you can modify `config.js`, if necessary.
+3. Click the **Deploy** button below on your repository.  
   
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
