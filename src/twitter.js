@@ -7,4 +7,4 @@ const twitterBot = new Twit({
     access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
 });
 
-module.exports = twitterBot
+module.exports = twitterBot;

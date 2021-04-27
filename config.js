@@ -5,6 +5,6 @@
 
 const config = {
     artists: [3158, 96862, 1840820]
-}
+};
 
-module.exports = config
+module.exports = config;
