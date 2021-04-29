@@ -55,9 +55,10 @@ function selectRandomBars(lyrics) {
     return bars;
 }
 
-try {
-    getSongById(random_song, process.env.GENIUS_ACCESS_TOKEN)
-        .then((song) => {
+// Grab the lyrics, clean/prepare, and then Tweet them
+getSongById(random_song, process.env.GENIUS_ACCESS_TOKEN)
+    .then((song) => {
+        try {
             const lyrics = cleanLyrics(song);
             const random_bars = selectRandomBars(lyrics);
 
@@ -70,7 +71,7 @@ try {
                         throw `There was an error: \n${error}`;
                     }
                 });
-        });
-} catch {
-    console.log(`There was an error finding the specified song: ${random_song}`);
-}
+        } catch (e) {
+            console.error(e)
+        }
+    });
