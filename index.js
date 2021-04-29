@@ -36,7 +36,7 @@ function cleanLyrics(song) {
 function selectRandomBars(lyrics) {
 
     // Select a random bar from the lyrics array
-    let position = Math.floor(Math.random() * lyrics.length - config.crawl_amount);
+    let position = Math.floor(Math.random() * (lyrics.length - config.crawl_amount));
 
     // Construct the base string
     let bars = [lyrics[position]];
