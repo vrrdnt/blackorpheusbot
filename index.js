@@ -2,6 +2,7 @@ require("dotenv").config();
 const { getSongById } = require("genius-lyrics-api");
 const config = require("./config.js");
 const twitterBot = require("./src/twitter.js");
+const { loadRecents, saveRecent } = require("./src/tracking/recent_posts.json")
 
 // Load the JSON file artist_song_ids.json
 let song_ids = require("./src/artist_song_ids.json");
@@ -71,6 +72,10 @@ getSongById(random_song, process.env.GENIUS_ACCESS_TOKEN)
                         throw `There was an error: \n${error}`;
                     }
                 });
+
+            const recents = loadRecents()
+
+            saveRecent(random_bars, recents)
         } catch (e) {
             console.error(e)
         }
