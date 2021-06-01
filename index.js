@@ -2,7 +2,7 @@ require("dotenv").config();
 const { getSongById } = require("genius-lyrics-api");
 const config = require("./config.js");
 const twitterBot = require("./src/twitter.js");
-const { loadRecents, saveRecent } = require("./src/tracking/recent_posts.json")
+const { loadRecents, saveRecent } = require("./src/tracking/recent.js")
 
 // Load the JSON file artist_song_ids.json
 let song_ids = require("./src/artist_song_ids.json");
