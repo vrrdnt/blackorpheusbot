@@ -105,3 +105,6 @@ dist
 
 # WebStorm directories
 .idea
+
+# Recent song list (don't overwrite the tracked list on Heroku
+src/tracking/recent_posts.json
