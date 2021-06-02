@@ -34,20 +34,20 @@ function cleanLyrics(song) {
     return lyrics_array;
 }
 
-function selectRandomBars(lyrics) {
+function selectRandomBars(lyrics_array) {
 
     // Select a random bar from the lyrics array
-    let position = Math.floor(Math.random() * (lyrics.length - config.crawl_amount));
+    let position = Math.floor(Math.random() * (lyrics_array.length - config.crawl_amount));
 
     // Construct the base string
-    let bars = [lyrics[position]];
+    let bars = [lyrics_array[position]];
 
     // Select a random number of bars to crawl up through
     let crawl_amount = Math.floor(Math.random() * (config.crawl_amount + 1));
 
     // Construct a set of bars using a random start position and random crawl amount
     for (let i = 1; i <= crawl_amount; i++) {
-        bars.push(lyrics[position + i]);
+        bars.push(lyrics_array[position + i]);
     }
 
     // Convert the constructed bars to an all-lowercase string
@@ -56,16 +56,39 @@ function selectRandomBars(lyrics) {
     return bars;
 }
 
+function checkRecent(bars) {
+
+    // Load recent tweets
+    let recents = loadRecents()
+
+    // Check if the primed tweet was tweeted in the last 15(ish) tweets
+    if (recents.includes(bars)) {
+        return selectRandomBars()
+    }
+
+    // Save the primed tweet to history
+    saveRecent(bars, recents)
+
+    return bars
+}
+
 // Grab the lyrics, clean/prepare, and then Tweet them
 getSongById(random_song, process.env.GENIUS_ACCESS_TOKEN)
     .then((song) => {
         try {
+
+            // Clean the lyrics string, prepare for random selection
             const lyrics = cleanLyrics(song);
+
+            // Select a random set of bars from the cleaned string
             const random_bars = selectRandomBars(lyrics);
 
-            // Post a tweet containing the bars generated earlier
+            // Check the post history
+            const tweet = checkRecent(random_bars)
+
+            // Post a tweet containing the bars generated
             twitterBot.post('statuses/update', {
-                    status: random_bars
+                    status: tweet
                 },
                 function(error) {
                     if (error) {
@@ -73,9 +96,7 @@ getSongById(random_song, process.env.GENIUS_ACCESS_TOKEN)
                     }
                 });
 
-            const recents = loadRecents()
 
-            saveRecent(random_bars, recents)
         } catch (e) {
             console.error(e)
         }
