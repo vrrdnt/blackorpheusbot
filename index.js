@@ -88,7 +88,7 @@ function makeTweet(song) {
 
         // Post a tweet containing the generated bars
         twitterBot.post('statuses/update', {
-                status: tweet
+                status: random_bars
             },
             function(error) {
                 if (error) {
