@@ -13,6 +13,9 @@ let random_artist = config.artists[Math.floor(Math.random() * config.artists.len
 // Get a random song ID from the list of song IDs for the randomly-picked artist
 let random_song = song_ids[random_artist][Math.floor(Math.random() * song_ids[random_artist].length)];
 
+// Load the recent tweet list
+let recents = loadRecents()
+
 function cleanLyrics(song) {
 
     // If the song is empty or invalid, throw an exception.
@@ -36,11 +39,13 @@ function cleanLyrics(song) {
 
 function selectRandomBars(lyrics_array) {
 
+    let bars;
+
     // Select a random bar from the lyrics array
     let position = Math.floor(Math.random() * (lyrics_array.length - config.crawl_amount));
 
     // Construct the base string
-    let bars = [lyrics_array[position]];
+    bars = [lyrics_array[position]];
 
     // Select a random number of bars to crawl up through
     let crawl_amount = Math.floor(Math.random() * (config.crawl_amount + 1));
@@ -50,54 +55,56 @@ function selectRandomBars(lyrics_array) {
         bars.push(lyrics_array[position + i]);
     }
 
-    // Convert the constructed bars to an all-lowercase string
-    bars = bars.map(bar => bar.toLowerCase()).join('\n');
-
-    return bars;
+    return checkRecent(bars, lyrics_array);
 }
 
-function checkRecent(bars) {
-
-    // Load recent tweets
-    let recents = loadRecents()
+function checkRecent(bars, lyrics_array) {
 
     // Check if the primed tweet was tweeted in the last 15(ish) tweets
-    if (recents.includes(bars)) {
-        return selectRandomBars()
+    for (let i = 0; i < bars.length; i++) {
+        if (recents.some(bar => bar.includes(bars))) {
+            selectRandomBars(lyrics_array)
+        }
     }
+
+    // Make a constructed string
+    bars = bars.map(bar => bar.toLowerCase()).join('\n');
 
     // Save the primed tweet to history
     saveRecent(bars, recents)
 
     return bars
+
+}
+
+function makeTweet(song) {
+    try {
+
+        // Clean the lyrics string, prepare for random selection
+        const lyrics = cleanLyrics(song);
+
+        // Select a random set of bars from the cleaned string
+        const random_bars = selectRandomBars(lyrics);
+
+        // Post a tweet containing the generated bars
+        twitterBot.post('statuses/update', {
+                status: tweet
+            },
+            function(error) {
+                if (error) {
+                    throw `There was an error: \n${error}`;
+                }
+            });
+
+
+    } catch (e) {
+        console.error(e)
+        makeTweet(song)
+    }
 }
 
 // Grab the lyrics, clean/prepare, and then Tweet them
 getSongById(random_song, process.env.GENIUS_ACCESS_TOKEN)
     .then((song) => {
-        try {
-
-            // Clean the lyrics string, prepare for random selection
-            const lyrics = cleanLyrics(song);
-
-            // Select a random set of bars from the cleaned string
-            const random_bars = selectRandomBars(lyrics);
-
-            // Check the post history
-            const tweet = checkRecent(random_bars)
-
-            // Post a tweet containing the bars generated
-            twitterBot.post('statuses/update', {
-                    status: tweet
-                },
-                function(error) {
-                    if (error) {
-                        throw `There was an error: \n${error}`;
-                    }
-                });
-
-
-        } catch (e) {
-            console.error(e)
-        }
+        makeTweet(song)
     });
