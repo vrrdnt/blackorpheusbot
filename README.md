@@ -32,4 +32,4 @@ Create a `.env` file containing these keys, with your own values:
 |:---:|---|
 |❌|Cache songs as they're downloaded to reduce Genius API calls|
 |❌|Download a fresh list of song IDs for every specified artist on a regular basis|
-|✔|Cache generated tweets, prevent posting identical tweets until a certain amount of time has passed|
+|✔|Cache generated tweets, prevent posting similar tweets until a certain amount of time has passed|
