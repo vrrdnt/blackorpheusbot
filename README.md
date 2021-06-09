@@ -1,5 +1,5 @@
-# blackorpheusbot
-A Twitter bot that tweets a random R.A.P. Ferreira FKA Milo lyric every hour.  
+# genius-to-twitter
+A Twitter bot that tweets a random bar from a specified artist using the Genius and Twitter APIs.
 # NOTE:  
 This project isn't quite usable yet. You'd have to generate your own JSON list of song IDs. I'm working on a better solution :-)
 ## Configuration
