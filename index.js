@@ -1,110 +1,135 @@
 require("dotenv").config();
+
 const { getSongById } = require("genius-lyrics-api");
-const config = require("./config.js");
+const fetch = require('node-fetch');
 const twitterBot = require("./src/twitter.js");
-const { loadRecents, saveRecent } = require("./src/tracking/recent.js")
+const fs = require('fs');
+// import { loadRecents, saveRecents } from './src/tracking/recent.js';
 
-// Load the JSON file artist_song_ids.json
-let song_ids = require("./src/artist_song_ids.json");
+const config = require("./config.js");
+const path = require("path");
 
-// Select a random Artist ID from the list artist_ids
-let random_artist = config.artists[Math.floor(Math.random() * config.artists.length)];
-
-// Get a random song ID from the list of song IDs for the randomly-picked artist
-let random_song = song_ids[random_artist][Math.floor(Math.random() * song_ids[random_artist].length)];
-
-// Load the recent tweet list
-let recents = loadRecents()
-
-function cleanLyrics(song) {
-
-    // If the song is empty or invalid, throw an exception.
-    if (!song.lyrics) throw "The song is either empty or invalid.";
-
-    // If the song is an instrumental, throw an exception.
-    if (song.lyrics.toLowerCase() === '[instrumental]') throw "Selected song is an instrumental.";
-
-    // Split the lyrics string into an array of strings, split by newline characters
-    let lyrics_array = song.lyrics.split('\n');
-
-    // Clean the lyrics, removing any lines starting with a left bracket and empty lines
-    for (let i = lyrics_array.length - 1; i >= 0; i--) {
-        if (lyrics_array[i].charAt(0) === '[' || lyrics_array[i].charAt(0) === '') {
-            lyrics_array.splice(i, 1);
-        }
+class Tweet {
+    constructor(contents) {
+        this.contents = contents;
     }
 
-    return lyrics_array;
-}
-
-function selectRandomBars(lyrics_array) {
-
-    let bars;
-
-    // Select a random bar from the lyrics array
-    let position = Math.floor(Math.random() * (lyrics_array.length - config.crawl_amount));
-
-    // Construct the base string
-    bars = [lyrics_array[position]];
-
-    // Select a random number of bars to crawl up through
-    let crawl_amount = Math.floor(Math.random() * (config.crawl_amount + 1));
-
-    // Construct a set of bars using a random start position and random crawl amount
-    for (let i = 1; i <= crawl_amount; i++) {
-        bars.push(lyrics_array[position + i]);
-    }
-
-    return checkRecent(bars, lyrics_array);
-}
-
-function checkRecent(bars, lyrics_array) {
-
-    // Check if the primed tweet was tweeted in the last 15(ish) tweets
-    for (let i = 0; i < bars.length; i++) {
-        if (recents.some(bar => bar.includes(bars))) {
-            selectRandomBars(lyrics_array)
-        }
-    }
-
-    // Make a constructed string
-    bars = bars.map(bar => bar.toLowerCase()).join('\n');
-
-    // Save the primed tweet to history
-    saveRecent(bars, recents)
-
-    return bars
-
-}
-
-function makeTweet(song) {
-    try {
-
-        // Clean the lyrics string, prepare for random selection
-        const lyrics = cleanLyrics(song);
-
-        // Select a random set of bars from the cleaned string
-        const random_bars = selectRandomBars(lyrics);
-
-        // Post a tweet containing the generated bars
+    sendTweet(contents=this.contents) {
         twitterBot.post('statuses/update', {
-                status: random_bars
-            },
-            function(error) {
-                if (error) {
-                    throw `There was an error: \n${error}`;
-                }
-            });
+            status: contents
+        },
+        function(error) {
+            if (!error) return
+            console.log(`There was an error: \n${error}`); 
+        });
+        }
 
-
-    } catch (e) {
-        console.error(e)
-        makeTweet(song)
+    updateName(song_name=null) {
+        if (!song_name) return
+        twitterBot.post(`account/update_profile`, { "name": song_name }, function (err) {
+            if (err) return console.error(err)
+        })
     }
 }
 
-// Grab the lyrics, clean/prepare, and then Tweet them
-getSongById(random_song, process.env.GENIUS_ACCESS_TOKEN)
-    .then((song) => {
-        makeTweet(song)
-    });
+class ArtistSet {
+
+    // 3158 Milo
+    // 96862 Scallops Hotel
+    // 1840820 R.A.P. Ferreira
+    // 1544550 Nostrum Grocers
+
+    // Individual songs to block
+    // 6393069, 
+
+    constructor(...rest) {
+        this.artist_ids = [...rest];
+        this.discography = [];
+        this.song_object = {
+            lyrics: []
+        }
+    }
+    
+    async fetchSongs(artists=this.artist_ids) {
+        for (const artist of artists) {
+            let page = 1;
+            let response_collector = [];
+            let response_song_collector = [];
+            let loop = true;
+            while (loop) {
+                const response = await fetch(`https://api.genius.com/artists/${artist}/songs?per_page=50&page=${page}`, {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${process.env.GENIUS_ACCESS_TOKEN}`,
+                        },
+                    })
+    
+                    const data = await response.json()
+                    let songs = data["response"]["songs"];
+                    let next_page = data["response"]["next_page"];
+    
+                    response_song_collector.push(JSON.stringify(data, null, 4))
+    
+
+                    for (const song in songs) {
+                        response_collector.push([songs[song]["id"], songs[song]["title"]])
+                    }
+    
+                    if (!next_page) {
+                        loop = false;
+                        return this.discography = response_collector.map(song => (song));
+                    } else {
+                        page = next_page;
+                    }
+                }
+        }
+    }
+
+    async download(id=0) {
+        if (!id) return console.error("No ID supplied.")
+        let try_again = true;
+        while (try_again) {
+            const song_object = await getSongById(id, process.env.GENIUS_ACCESS_TOKEN);
+            if(song_object.lyrics) {
+                try_again = false;
+            }
+        
+            this.song_object = song_object;
+        }
+
+        this.song_object.lyrics = this.song_object.lyrics.split("\n")
+
+        for (let i = this.song_object.lyrics.length - 1; i >= 0; i--) {
+            if (this.song_object.lyrics[i].charAt(0) === '[' || 
+            this.song_object.lyrics[i].charAt(0) === '' ||
+             this.song_object.lyrics[i].charAt(0) === '(') {
+                this.song_object.lyrics.splice(i, 1);
+            }
+        }
+    }
+
+    random() {
+        return this.discography[Math.floor(Math.random() * this.discography.length)];
+    }
+}
+
+const test_artist = new ArtistSet(3158, 96862, 1840820, 1544550);
+
+async function main() {
+    await test_artist.fetchSongs();
+
+    const random_song = test_artist.random();
+    const id = random_song[0];
+    const title = random_song[1];
+
+    await test_artist.download(id)
+
+    const tweetObject = new Tweet("test")
+    console.log(test_artist.song_object.lyrics);
+}
+
+main();
+
+// TODO: Pre-generate a tweet and DM it to vrrdnt. Allow a "yes" or "no" response to post the tweet,
+// or block that song ID from entering the available song pool
+// Disallow lines past a certain length (280 for max tweet length, aim to cut off at closest sentence)
