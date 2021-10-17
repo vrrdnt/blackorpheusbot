@@ -12,7 +12,9 @@ class ArtistSet {
 
     // Individual songs to block
     BLOCKED_SONG_IDS = [
-        6393069, 7105027, 3420106,
+        6393069, 
+        7105027, 
+        3420106,
         4051931
     ]
 

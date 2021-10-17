@@ -28,9 +28,8 @@ class Tweet {
     }
 
     async updateProfileImage(extension="") {
-        twitterBot.postMediaChunked({ file_path: path.join(__dirname, "../../", `image.${extension}`)}, function (err, data, response) {
+        twitterBot.postMediaChunked({ file_path: path.join(__dirname, "../../", `image.${extension}`)}, function (err) {
             if (err) return console.error(err);
-            console.log(data);
           })
         twitterBot.post(`account/update_profile_image`, { image: fs.readFileSync(path.join(__dirname, "../../", `image.${extension}`)).toString("base64") }, function (err) {
             if (err) return console.error(err);

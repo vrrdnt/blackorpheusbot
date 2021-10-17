@@ -20,17 +20,13 @@ async function main() {
 
     const random_set = artist_set.randomSet();
 
-    console.log(random_set);
-
-    console.log(artist_set.song_object.id)
-
     const tweet = new Tweet(artist_set.song_object.name);
 
-    // tweet.sendTweet(random_set.join("\n"));
+    tweet.sendTweet(random_set.join("\n"));
 
-    // tweet.updateName(title)
+    tweet.updateName(title)
 
-    // await tweet.updateProfileImage(url);
+    await tweet.updateProfileImage(url);
 
 }
 
