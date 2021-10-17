@@ -22,7 +22,7 @@ class Tweet {
 
     updateName(song_name) {
         if (!song_name) return
-        twitterBot.post(`account/update_profile`, { "name": song_name }, function (err) {
+        twitterBot.post(`account/update_profile`, { "name": song_name.splice(0, 47) + "..." }, function (err) {
             if (err) return console.error(err);
         })
     }
