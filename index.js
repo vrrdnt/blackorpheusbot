@@ -1,110 +1,43 @@
 require("dotenv").config();
-const { getSongById } = require("genius-lyrics-api");
+const ArtistSet = require("./src/classes/ArtistSet.js");
+const Tweet = require("./src/classes/Tweet.js");
+// import { loadRecents, saveRecents } from './src/tracking/recent.js';
+
 const config = require("./config.js");
-const twitterBot = require("./src/twitter.js");
-const { loadRecents, saveRecent } = require("./src/tracking/recent.js")
+const path = require("path");
+const Twit = require("twit");
 
-// Load the JSON file artist_song_ids.json
-let song_ids = require("./src/artist_song_ids.json");
+const artist_set = new ArtistSet(3158, 96862, 1840820, 1544550);
 
-// Select a random Artist ID from the list artist_ids
-let random_artist = config.artists[Math.floor(Math.random() * config.artists.length)];
+async function main() {
+    await artist_set.fetchSongs();
 
-// Get a random song ID from the list of song IDs for the randomly-picked artist
-let random_song = song_ids[random_artist][Math.floor(Math.random() * song_ids[random_artist].length)];
+    const random_song = artist_set.randomSong();
+    const id = random_song[0];
+    const title = random_song[1];
 
-// Load the recent tweet list
-let recents = loadRecents()
+    const url = await artist_set.download(id)
 
-function cleanLyrics(song) {
+    const random_set = artist_set.randomSet();
 
-    // If the song is empty or invalid, throw an exception.
-    if (!song.lyrics) throw "The song is either empty or invalid.";
+    const tweet = new Tweet(artist_set.song_object.name);
 
-    // If the song is an instrumental, throw an exception.
-    if (song.lyrics.toLowerCase() === '[instrumental]') throw "Selected song is an instrumental.";
+    tweet.sendTweet(random_set.join("\n"));
 
-    // Split the lyrics string into an array of strings, split by newline characters
-    let lyrics_array = song.lyrics.split('\n');
+    tweet.updateName(title)
 
-    // Clean the lyrics, removing any lines starting with a left bracket and empty lines
-    for (let i = lyrics_array.length - 1; i >= 0; i--) {
-        if (lyrics_array[i].charAt(0) === '[' || lyrics_array[i].charAt(0) === '') {
-            lyrics_array.splice(i, 1);
-        }
-    }
-
-    return lyrics_array;
-}
-
-function selectRandomBars(lyrics_array) {
-
-    let bars;
-
-    // Select a random bar from the lyrics array
-    let position = Math.floor(Math.random() * (lyrics_array.length - config.crawl_amount));
-
-    // Construct the base string
-    bars = [lyrics_array[position]];
-
-    // Select a random number of bars to crawl up through
-    let crawl_amount = Math.floor(Math.random() * (config.crawl_amount + 1));
-
-    // Construct a set of bars using a random start position and random crawl amount
-    for (let i = 1; i <= crawl_amount; i++) {
-        bars.push(lyrics_array[position + i]);
-    }
-
-    return checkRecent(bars, lyrics_array);
-}
-
-function checkRecent(bars, lyrics_array) {
-
-    // Check if the primed tweet was tweeted in the last 15(ish) tweets
-    for (let i = 0; i < bars.length; i++) {
-        if (recents.some(bar => bar.includes(bars))) {
-            selectRandomBars(lyrics_array)
-        }
-    }
-
-    // Make a constructed string
-    bars = bars.map(bar => bar.toLowerCase()).join('\n');
-
-    // Save the primed tweet to history
-    saveRecent(bars, recents)
-
-    return bars
+    await tweet.updateProfileImage(url);
 
 }
 
-function makeTweet(song) {
-    try {
+main();
 
-        // Clean the lyrics string, prepare for random selection
-        const lyrics = cleanLyrics(song);
+// TODO: Pre-generate a tweet and DM it to vrrdnt. Allow a "yes" or "no" response to post the tweet,
+// or block that song ID from entering the available song pool (need persistent storage, no heroku)
 
-        // Select a random set of bars from the cleaned string
-        const random_bars = selectRandomBars(lyrics);
+// TODO: Set profile picture to the provided album art on Genius. If the default is the result (or some key in the JSON response
+// says something about not having album art) then set it to a default of our choosing.
 
-        // Post a tweet containing the generated bars
-        twitterBot.post('statuses/update', {
-                status: random_bars
-            },
-            function(error) {
-                if (error) {
-                    throw `There was an error: \n${error}`;
-                }
-            });
+// TODO: Disallow lines past a certain length (280 for max tweet length, aim to cut off at closest finished sentence)
 
-
-    } catch (e) {
-        console.error(e)
-        makeTweet(song)
-    }
-}
-
-// Grab the lyrics, clean/prepare, and then Tweet them
-getSongById(random_song, process.env.GENIUS_ACCESS_TOKEN)
-    .then((song) => {
-        makeTweet(song)
-    });
+// TODO: Implement some kind of crawl. No way to clean strings without potentially ruining a tweet.

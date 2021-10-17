@@ -12,5 +12,7 @@ node_modules/
 .idea
 idea/
 
-# Recent song list (don't overwrite the tracked list on Heroku
-src/tracking/recent_posts.json
+# Testing
+image.png
+response.json
+test_artist.json
