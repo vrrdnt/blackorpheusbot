@@ -1,14 +1,11 @@
 const { getSongById } = require("genius-lyrics-api");
 const fetch = require('node-fetch');
-const { SSL_OP_EPHEMERAL_RSA } = require("constants");
-const fs = require('fs')
 
 class ArtistSet {
 
     // 3158 Milo
     // 96862 Scallops Hotel
     // 1840820 R.A.P. Ferreira
-    // 1544550 Nostrum Grocers
 
     // Individual songs to block
     BLOCKED_SONG_IDS = [
@@ -87,12 +84,8 @@ class ArtistSet {
             this.song_object.lyrics[i].includes("?")) { 
                 this.song_object.lyrics.splice(i, 1);
             }
+            this.song_object.lyrics[i].charAt(0).toLowerCase()
         }
-
-        const extension = `${this.song_object.albumArt.slice(this.song_object.albumArt.lastIndexOf(".") + 1, this.song_object.albumArt.length)}`
-        fs.writeFileSync(`image.${extension}`, await (await fetch(this.song_object.albumArt)).buffer(), { encoding: "base64" })
-
-        return extension;
     }
 
     randomSong() {
