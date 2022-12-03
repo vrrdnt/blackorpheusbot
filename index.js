@@ -1,22 +1,24 @@
-require("dotenv").config();
-const ArtistSet = require("./src/classes/ArtistSet.js");
+const { bot } = require("./src/classes/bot.js"); // why. what goes in here
 
-const artist_set = new ArtistSet(3158, 96862, 1840820);
+const schedulesPath = path.join(__dirname, 'schedules');
+const scheduleFiles = fs.readdirSync(schedulesPath).filter(file => file.endsWith('.js'));
 
-async function main() {
-    await artist_set.fetchSongs();
-
-    const random_song = artist_set.randomSong();
-    const id = random_song[0];
-    const title = random_song[1];
-
-    const url = await artist_set.download(id)
-
-    const random_set = artist_set.randomSet();
-
-    const tweet = new Tweet(artist_set.song_object.name);
-
-    tweet.sendTweet(random_set.join("\n"));
+for (const scheduleFile of scheduleFiles) {
+    const schedulePath = path.join(schedulesPath, scheduleFile);
+    const schedule = require(schedulePath);
+    
+    bot.on(schedule.name, (...args) => schedule.execute(...args)) // iffy. don't let this confuse you
 }
 
-main();
+bot.on('scheduledTweet', function(err) {
+    // grab random song from song list
+    // get lyrics, get random bars
+    // check if selected bars exist, redo above if so
+    // clean/prepare text, send tweet
+    // add tweet to recent tweets list
+});
+
+bot.on('scheduledSync', function(err) {
+    // for each artist, use genious api to pull all songs (paginated)
+    // replace existing song list with new results
+});
