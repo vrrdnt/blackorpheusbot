@@ -91,5 +91,3 @@ if (!fs.existsSync(path.join(__dirname, 'songs.json'))) { scheduler.emit('schedu
 
 tweetSchedule.start();
 syncSchedule.start();
-
-scheduler.emit('scheduledTweet');
