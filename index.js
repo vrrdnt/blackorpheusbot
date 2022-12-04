@@ -1,56 +1,56 @@
-const fs = require('fs')
-const path = require('path')
+const fs = require('fs');
+const path = require('path');
 const fetch = require('node-fetch');
+
+const config = require('./config.js');
+
+const { getSongById } = require('genius-lyrics-api');
+
+const { TwitterApi } = require('twitter-api-v2');
+const twitterClient = new TwitterApi({ 
+    appKey: config.twitter_api_key,
+    appSecret: config.twitter_api_key_secret,
+    accessToken: config.twitter_access_token, 
+    accessSecret: config.twitter_access_token_secret });
 
 const scheduler = require("./src/classes/Scheduler.js");
 
 const tweetSchedule = require('./src/schedules/tweet.js');
 const syncSchedule = require('./src/schedules/sync');
-const config = require('./config.js');
 
-scheduler.on('scheduledTweet', () => {
+scheduler.on('scheduledTweet', async () => {
     // grab random song from song list
-    function randomSong() {
-        return this.discography[Math.floor(Math.random() * this.discography.length)];
-    }
+    const songList = require('./songs.json');
+    const song = songList[Math.floor(Math.random() * songList.length)];
 
     // get lyrics
-    if (!id) return console.error("No ID supplied.")
-        let try_again = true;
-        let song_object = { lyrics: [] };
-        while (try_again) {
-            song_object = await getSongById(id, process.env.GENIUS_ACCESS_TOKEN);
-            if(song_object.lyrics) {
-                try_again = false;
-            }
-        
-            this.song_object = song_object
-        }
+    let response = await getSongById(song, config.genius_access_token);
+    if(!response.lyrics) { return scheduler.emit('scheduledTweet'); }
 
-        this.song_object.lyrics = this.song_object.lyrics.split(/\n/);
+    // clean/prepare text
+    response.lyrics = response.lyrics.split(/\n/);
 
-        for (let i = this.song_object.lyrics.length - 1; i >= 0; i--) {
-            if (this.song_object.lyrics[i].charAt(0) === '[' ||
-            this.song_object.lyrics[i].charAt(0) === '' ||
-            this.song_object.lyrics[i].includes("?")) { 
-                this.song_object.lyrics.splice(i, 1);
-            }
-            this.song_object.lyrics[i].charAt(0).toLowerCase()
-        }
+    function cleanLyrics(bar) {
+        return !bar.startsWith('[') && !bar.includes('?') && !/[Xx]\d/.test(bar)
+    }
 
-        // get random bars
-        function randomSet() {
-            const batch = [];
-    
-            const random = Math.floor(Math.random() * this.song_object.lyrics.length-2)
-            
-            batch.push(this.song_object.lyrics[random],this.song_object.lyrics[random + 1], this.song_object.lyrics[random + 2])
-            
-            return batch
-        }
+    let lyrics = response.lyrics.filter(cleanLyrics);
+    lyrics = lyrics.map(bar => bar.charAt(0).toLowerCase() + bar.substr(1));
+    lyrics = lyrics.map(bar => bar.replace(/ I /, ' i '));
+
+    // get random bars
+    const batch = [];
+    const randomIndex = Math.floor(Math.random() * lyrics.length - 2)
+    batch.push(lyrics[randomIndex], lyrics[randomIndex + 1], lyrics[randomIndex + 2])
+
     // check if selected bars exist in recent tweets, redo above if so
-    // clean/prepare text, send tweet
+    // TODO: IMPLEMENT THIS
+
+    // send tweet
+    await twitterClient.v1.tweet(batch.join('\n'));
+
     // add tweet to recent tweets list
+    // TODO: IMPLEMENT THIS TOO
 });
 
 scheduler.on('scheduledSync', async () => {
@@ -91,3 +91,5 @@ if (!fs.existsSync(path.join(__dirname, 'songs.json'))) { scheduler.emit('schedu
 
 tweetSchedule.start();
 syncSchedule.start();
+
+scheduler.emit('scheduledTweet');
