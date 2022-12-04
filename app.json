@@ -1,7 +1,0 @@
-{
-  "name": "blackorpheusot",
-  "description": "A Twitter bot that tweets a random R.A.P. Ferreira FKA Milo lyric every hour. ",
-  "repository": "https://github.com/vrrdnt/blackorpheusbot",
-  "logo": "https://pbs.twimg.com/profile_images/1379939229367595009/OcRDMapZ_200x200.jpg",
-  "keywords": ["node", "twitter", "genius", "bot"]
-}
