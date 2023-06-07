@@ -12,7 +12,5 @@ node_modules/
 .idea
 idea/
 
-# Testing
-image.png
-response.json
-test_artist.json
+# Per-user
+config.js

@@ -18,10 +18,15 @@ const scheduler = require("./src/classes/Scheduler.js");
 const tweetSchedule = require('./src/schedules/tweet.js');
 const syncSchedule = require('./src/schedules/sync');
 
+const BLOCKED_SONGS = [6393069, 505843];
+
 scheduler.on('scheduledTweet', async () => {
     // grab random song from song list
     const songList = require('./songs.json');
     const song = songList[Math.floor(Math.random() * songList.length)];
+
+    // check to see if returned song is blocked
+    if (BLOCKED_SONGS.includes(song)) { return scheduler.emit('scheduledTweet'); }
 
     // get lyrics
     let response = await getSongById(song, config.genius_access_token);
@@ -36,6 +41,7 @@ scheduler.on('scheduledTweet', async () => {
 
     let lyrics = response.lyrics.filter(cleanLyrics);
     lyrics = lyrics.map(bar => bar.charAt(0).toLowerCase() + bar.substr(1));
+    lyrics = lyrics.map(bar => bar.replace(/r\.A\.P/, 'R.A.P'))
     lyrics = lyrics.map(bar => bar.replace(/ I /, ' i '));
 
     // get random bars
@@ -43,14 +49,8 @@ scheduler.on('scheduledTweet', async () => {
     const randomIndex = Math.floor(Math.random() * lyrics.length - 2)
     batch.push(lyrics[randomIndex], lyrics[randomIndex + 1], lyrics[randomIndex + 2])
 
-    // check if selected bars exist in recent tweets, redo above if so
-    // TODO: IMPLEMENT THIS
-
     // send tweet
     await twitterClient.v1.tweet(batch.join('\n'));
-
-    // add tweet to recent tweets list
-    // TODO: IMPLEMENT THIS TOO
 });
 
 scheduler.on('scheduledSync', async () => {
@@ -91,5 +91,3 @@ if (!fs.existsSync(path.join(__dirname, 'songs.json'))) { scheduler.emit('schedu
 
 tweetSchedule.start();
 syncSchedule.start();
-
-scheduler.emit('scheduledTweet');
