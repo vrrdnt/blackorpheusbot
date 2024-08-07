@@ -1,93 +1,55 @@
-const fs = require('fs');
-const path = require('path');
-const fetch = require('node-fetch');
+const dotenv = require("dotenv").config();
 
-const config = require('./config.js');
-
-const { getSongById } = require('genius-lyrics-api');
-
-const { TwitterApi } = require('twitter-api-v2');
-const twitterClient = new TwitterApi({ 
-    appKey: config.twitter_api_key,
-    appSecret: config.twitter_api_key_secret,
-    accessToken: config.twitter_access_token, 
-    accessSecret: config.twitter_access_token_secret });
-
-const scheduler = require("./src/classes/Scheduler.js");
-
-const tweetSchedule = require('./src/schedules/tweet.js');
-const syncSchedule = require('./src/schedules/sync');
-
-const BLOCKED_SONGS = [6393069, 505843];
-
-scheduler.on('scheduledTweet', async () => {
-    // grab random song from song list
-    const songList = require('./songs.json');
-    const song = songList[Math.floor(Math.random() * songList.length)];
-
-    // check to see if returned song is blocked
-    if (BLOCKED_SONGS.includes(song)) { return scheduler.emit('scheduledTweet'); }
-
-    // get lyrics
-    let response = await getSongById(song, config.genius_access_token);
-    if(!response.lyrics) { return scheduler.emit('scheduledTweet'); }
-
-    // clean/prepare text
-    response.lyrics = response.lyrics.split(/\n/);
-
-    function cleanLyrics(bar) {
-        return !bar.startsWith('[') && !bar.includes('?') && !/[Xx]\d/.test(bar)
-    }
-
-    let lyrics = response.lyrics.filter(cleanLyrics);
-    lyrics = lyrics.map(bar => bar.charAt(0).toLowerCase() + bar.substr(1));
-    lyrics = lyrics.map(bar => bar.replace(/r\.A\.P/, 'R.A.P'))
-    lyrics = lyrics.map(bar => bar.replace(/ I /, ' i '));
-
-    // get random bars
-    const batch = [];
-    const randomIndex = Math.floor(Math.random() * lyrics.length - 2)
-    batch.push(lyrics[randomIndex], lyrics[randomIndex + 1], lyrics[randomIndex + 2])
-
-    // send tweet
-    await twitterClient.v1.tweet(batch.join('\n'));
+const Genius = require("genius-lyrics");
+const geniusClient = new Genius.Client(process.env.GENIUS_ACCESS_TOKEN);
+const { TwitterApi } = require("twitter-api-v2");
+const twitterClient = new TwitterApi({
+  appKey: process.env.TWITTER_API_KEY,
+  appSecret: process.env.TWITTER_API_KEY_SECRET,
+  accessToken: process.env.TWITTER_ACCESS_TOKEN,
+  accessSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
 });
 
-scheduler.on('scheduledSync', async () => {
-    let song_list = [];
+async function getArtistInfo(id) {
+  let artist = await geniusClient.artists.get(id);
+  console.log("About the Artist:\n", artist, "\n");
+  return artist;
+}
 
-    for (const artist of config.artists) {
-        let page = 1;
-        let loop = true;
-
-        while (loop) {
-            const response = await fetch(`https://api.genius.com/artists/${artist}/songs?per_page=50&page=${page}`, {
-                    method: "GET",
-                    headers: { Authorization: `Bearer ${config.genius_access_token}` },
-                })
-
-                const data = await response.json()
-                let songs = data["response"]["songs"];
-                let next_page = data["response"]["next_page"];
-
-                songs.forEach(song => {
-                    if (!song["primary_artist"]["id"] === artist) return
-                    song_list.push(song["id"])
-                });
-
-                if (!isNaN(next_page)) {
-                    loop = false;
-                } else {
-                    page = next_page;
-                }
-            }
+/**
+ * Returns a list of songs matching the artist name list
+ * @param {Number} id ID of desired artist on Genius
+ * @param {Array} array List of artist names
+ * @returns {Array} List of songs matching named artists
+ */
+async function getArtistSongs(id, artists) {
+  let artist = await getArtistInfo(id);
+  let batch = [];
+  for (let i = 1; i !== 0; i++) {
+    let songs = await artist.songs({
+      page: i,
+      perPage: 50,
+      sort: "title",
+    });
+    if (songs.length === 0) break;
+    console.log(`Songs: ${songs.length}`);
+    for (let song of songs) {
+      if (artists.includes(song.artist.name)) {
+        batch.push(song);
+      }
     }
+  }
+  return batch;
+}
 
-    fs.writeFileSync(path.join(__dirname, 'songs.json'), JSON.stringify(song_list));
-});
+(async () => {
+  const songs = await getArtistSongs(1840820, process.env.artists);
+  let song = songs[Math.floor(Math.random() * songs.length)];
+  let lyrics = await song.lyrics();
+  let title = song.fullTitle;
 
-// download song list if it doesn't exist at runtime
-if (!fs.existsSync(path.join(__dirname, 'songs.json'))) { scheduler.emit('scheduledSync') };
+  // TODO: keep only rory's verse(s) if others exist
 
-tweetSchedule.start();
-syncSchedule.start();
+  if (lyrics.contains(`[Verse 1: ${process.env.artists}`))
+    console.log(`${lyrics}\n${title}`);
+})();

@@ -10,10 +10,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^16.4.5",
     "events": "^3.3.0",
-    "genius-lyrics-api": "github:vrrdnt/genius-lyrics-api",
-    "node-cron": "^3.0.2",
-    "node-fetch": "^2.6.7",
-    "twitter-api-v2": "^1.12.9"
+    "genius-lyrics": "^4.4.7",
+    "node-cron": "^3.0.3",
+    "node-fetch": "^2.7.0",
+    "twitter-api-v2": "^1.17.2"
   }
 }

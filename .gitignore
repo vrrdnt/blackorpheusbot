@@ -14,3 +14,7 @@ idea/
 
 # Per-user
 config.js
+
+# Docker
+compose.yaml
+README.Docker.md
