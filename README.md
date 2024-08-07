@@ -1,6 +1,6 @@
 <!-- ⚠️ This README has been generated from the file(s) "blueprint.md" ⚠️--><h1 align="center">genius-to-twitter</h1>
 <p align="center">
-  <b></b></br>
+  <b>a docker image for tweeting lyrics from an artist's lyrics on Genius</b></br>
   <sub><sub>
 </p>
 

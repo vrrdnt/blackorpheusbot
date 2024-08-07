@@ -1,7 +1,7 @@
 {
   "name": "genius-to-twitter",
   "version": "1.0.0",
-  "description": "",
+  "description": "a docker image for tweeting lyrics from an artist's lyrics on Genius",
   "main": "index.js",
   "scripts": {
     "debug": "node index.js"
