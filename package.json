@@ -1,5 +1,5 @@
 {
-  "name": "blackorpheusbot",
+  "name": "genius-to-twitter",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -8,7 +8,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "dotenv": "^16.4.5",
     "events": "^3.3.0",

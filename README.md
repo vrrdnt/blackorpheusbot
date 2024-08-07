@@ -6,14 +6,16 @@
 
 <br />
 
+{{ template:badges }}
+
 [![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/colored.png)](#table-of-contents)
 
 ## ➤ Table of Contents
 
-- [➤ License](#-license)
+* [➤ License](#-license)
 
 [![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/colored.png)](#license)
 
 ## ➤ License
-
-Licensed under [ISC](https://opensource.org/licenses/ISC).
+	
+Licensed under [MIT](https://opensource.org/licenses/MIT).
